@@ -11,7 +11,7 @@ parser.add_argument('-f', '--file',
     help='Path to video file (if not using camera)')
 parser.add_argument('-c', '--color', type=str, default='rgb',
     help='Color space: "gray" (default) or "rgb"')
-parser.add_argument('-b', '--bins', type=int, default=2,
+parser.add_argument('-b', '--bins', type=int, default=16,
     help='Number of bins per channel (default 16)')
 parser.add_argument('-w', '--width', type=int, default=0,
     help='Resize video to specified width in pixels (maintains aspect)')
@@ -25,6 +25,7 @@ if not args.get('file', False):
     else:
         rval = False
 else:
+    rval = True
     vc = cv2.VideoCapture(args['file'])
 
 ## Analysis - Initialized part
@@ -70,8 +71,27 @@ while rval:
     # Normalize histograms based on number of pixels per frame.
     numPixels = np.prod(frame.shape[:2])
     if color == 'rgb':
-        cv2.imshow('RGB', frame)
         (b, g, r) = cv2.split(frame)
+        #for i in range(r.shape[0]):
+        # for j in range(r.shape[1]):
+        #    r[i,j] = r[i,j]*2
+        #    if r[i,j] > 255:
+        #        r[i,j] = 255
+        #newRGBImage = cv2.merge((b,g,r))
+
+        #hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        lower_bounded = np.array([0,0,0])
+        upper_bounded = np.array([0,255,0])
+
+        mask = cv2.inRange(frame, lower_bounded, upper_bounded)
+
+        newframe = cv2.bitwise_and(frame,frame, mask= mask)
+        
+        cv2.imshow('RGB', frame)
+        cv2.imshow('mask',mask)
+        cv2.imshow('res',newframe)
+
         histogramR = cv2.calcHist([r], [0], None, [bins], [0, 255]) / numPixels
         histogramG = cv2.calcHist([g], [0], None, [bins], [0, 255]) / numPixels
         histogramB = cv2.calcHist([b], [0], None, [bins], [0, 255]) / numPixels
@@ -91,5 +111,4 @@ while rval:
     if key == 27: # exit on ESC
         break
 
-capture.release()    
 cv2.destroyAllWindows()
