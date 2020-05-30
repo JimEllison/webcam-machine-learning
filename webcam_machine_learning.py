@@ -1,20 +1,37 @@
 ## Importing the required module 
-import numpy                    # For matrix
+import numpy as np              # For matrix
 import cv2                      # For webcam
 import matplotlib.pyplot as plt # For plot
+import argparse                 # For 
 
 ## Webcam - Initialized part
 
-cv2.namedWindow("preview")
-vc = cv2.VideoCapture(0)
-if vc.isOpened(): # try to get the first frame
-    rval, frame = vc.read()
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--file',
+    help='Path to video file (if not using camera)')
+parser.add_argument('-c', '--color', type=str, default='rgb',
+    help='Color space: "gray" (default) or "rgb"')
+parser.add_argument('-b', '--bins', type=int, default=2,
+    help='Number of bins per channel (default 16)')
+parser.add_argument('-w', '--width', type=int, default=0,
+    help='Resize video to specified width in pixels (maintains aspect)')
+args = vars(parser.parse_args())
+
+# Configure VideoCapture class instance for using camera or file input.
+if not args.get('file', False):
+    vc = cv2.VideoCapture(0)
+    if vc.isOpened(): # try to get the first frame
+        rval, frame = vc.read()
+    else:
+        rval = False
 else:
-    rval = False
+    vc = cv2.VideoCapture(args['file'])
 
 ## Analysis - Initialized part
 
-color = 'rgb'
+color = args['color']
+bins = args['bins']
+resizeWidth = args['width']
 
 # Initialize plot.
 fig, ax = plt.subplots()
@@ -40,8 +57,15 @@ plt.ion()
 plt.show()
 
 while rval:
-    cv2.imshow("preview", frame)
+    #cv2.imshow("preview", frame)
     rval, frame = vc.read()    
+
+    # Resize frame to width, if specified.
+    if resizeWidth > 0:
+        (height, width) = frame.shape[:2]
+        resizeHeight = int(float(resizeWidth / width) * height)
+        frame = cv2.resize(frame, (resizeWidth, resizeHeight),
+            interpolation=cv2.INTER_AREA)
 
     # Normalize histograms based on number of pixels per frame.
     numPixels = np.prod(frame.shape[:2])
@@ -68,5 +92,4 @@ while rval:
         break
 
 capture.release()    
-#cv2.destroyWindow("preview")
 cv2.destroyAllWindows()
